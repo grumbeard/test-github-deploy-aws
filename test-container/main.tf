@@ -28,9 +28,38 @@ resource "aws_ecs_task_definition" "api-service" {
   requires_compatibilities = ["EC2"]
 }
 
-resource "aws_ecs_service" "app-server" {
-  name            = "app-server-test-1"
+resource "aws_ecs_service" "worker" {
+  name            = "worker-test-1"
   cluster         = aws_ecs_cluster.app-service-cluster.id
   task_definition = aws_ecs_task_definition.api-service.arn
   desired_count   = 2
+}
+
+# Creates a few ECS-optimized EC2 instances to be used by cluster
+data "aws_vpc" "default_vpc" {
+  default = true
+}
+
+data "aws_subnets" "default_subnets" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default_vpc.id]
+  }
+}
+
+data "aws_ami" "ecs_optimized_ami" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["*amazon-ecs-optimized*"]
+  }
+}
+
+resource "aws_instance" "ecs_optimized_ec2" {
+  for_each      = toset(data.aws_subnets.default_subnets.ids)
+  ami           = data.aws_ami.ecs_optimized_ami.id
+  instance_type = "t2.micro"
+  subnet_id     = each.value
 }
