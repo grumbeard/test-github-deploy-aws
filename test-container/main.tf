@@ -27,3 +27,10 @@ resource "aws_ecs_task_definition" "api-service" {
   }])
   requires_compatibilities = ["EC2"]
 }
+
+resource "aws_ecs_service" "app-server" {
+  name            = "app-server-test-1"
+  cluster         = aws_ecs_cluster.app-service-cluster.id
+  task_definition = aws_ecs_task_definition.api-service.arn
+  desired_count   = 2
+}
