@@ -68,19 +68,19 @@ jobs:
         name: Get task definition data
         id: task-def-data
         run: |
-          aws ecs describe-task-definition --task-definition $ECS_TASK_DEFINITION_FAMILY --query taskDefinition > $ECS_TASK_DEFINITION
+          aws ecs describe-task-definition --task-definition $ECS_TASK_DEFINITION_FAMILY
       -
         name: Fill in new image ID in Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          task-definition: ${{ steps.task-def-data.outputs.taskDefinition }}
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.push-image.outputs.image }}
       -
         name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          task-definition: ${{ steps.task-def-data.outputs.taskDefinition }}
           service: ${{ env.ECS_SERVICE }}
           wait-for-service-stability: true
