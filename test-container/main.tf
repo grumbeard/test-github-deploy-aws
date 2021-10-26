@@ -5,6 +5,10 @@ resource "aws_ecr_repository" "api-service-registry" {
   }
 }
 
+resource "aws_ecs_cluster" "app-service-cluster" {
+  name = "app-service-cluster-test-1"
+}
+
 # Creates Task Definition with placeholder image
 # Image will be inserted in Task Definition by CI
 resource "aws_ecs_task_definition" "api-service" {

@@ -10,6 +10,7 @@ env:
   AWS_REGION: ap-southeast-1
   ECR_REPOSITORY: devtools-test-1
   ECS_SERVICE: api-service-container-test-1
+  ECS_CLUSTER: app-service-cluster-test-1
   ECS_TASK_DEFINITION_FAMILY: api-service-test-1
   ECS_TASK_DEFINITION: ./.aws/task-definition.json
   CONTAINER_NAME: api-service-container-test-1
@@ -66,21 +67,21 @@ jobs:
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
       -
         name: Get task definition data
-        id: task-def-data
         run: |
-          echo "::set-output name=taskDefinition::aws ecs describe-task-definition --task-definition $ECS_TASK_DEFINITION_FAMILY"
+          aws ecs describe-task-definition --task-definition $ECS_TASK_DEFINITION_FAMILY --query taskDefinition > $ECS_TASK_DEFINITION
       -
         name: Fill in new image ID in Amazon ECS task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ steps.task-def-data.outputs.taskDefinition }}
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.push-image.outputs.image }}
       -
         name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ${{ steps.task-def-data.outputs.taskDefinition }}
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
           service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
