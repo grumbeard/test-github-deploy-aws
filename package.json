@@ -1,0 +1,12 @@
+{
+  "name": "amongus-todo",
+  "version": "1.0.0",
+  "description": "Fake REST API server of tasks from Among Us",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "json-server": "^0.16.3"
+  }
+}

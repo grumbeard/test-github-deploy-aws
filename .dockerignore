@@ -1,0 +1,13 @@
+.env*
+
+# Editor Configs
+.eslint*
+.editorconfig
+.prettierrc.js
+
+# Dependencies
+node_modules
+
+# Tests
+tests
+*.test.js
