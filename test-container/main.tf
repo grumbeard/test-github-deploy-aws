@@ -35,7 +35,7 @@ resource "aws_ecs_service" "worker" {
   desired_count   = 2
 }
 
-# Creates a few ECS-optimized EC2 instances to be used by cluster
+# Get Subnet IDs of default VPC
 data "aws_vpc" "default_vpc" {
   default = true
 }
@@ -45,6 +45,46 @@ data "aws_subnets" "default_subnets" {
     name   = "vpc-id"
     values = [data.aws_vpc.default_vpc.id]
   }
+}
+
+# Create IAM Instance profile for ECS Container
+data "aws_iam_policy_document" "assume-role-policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ecs_container_role" {
+  name               = "ecs_container_role-test-1"
+  assume_role_policy = data.aws_iam_policy_document.assume-role-policy.json
+}
+
+data "aws_iam_policy" "ecs_container_policy_ecs" {
+  name = "AmazonEC2ContainerServiceforEC2Role"
+}
+
+resource "aws_iam_role_policy_attachment" "attach_container_policy_ecs_to_role" {
+  role       = aws_iam_role.ecs_container_role.name
+  policy_arn = data.aws_iam_policy.ecs_container_policy_ecs.arn
+}
+
+data "aws_iam_policy" "ecs_container_policy_s3" {
+  name = "AmazonS3ReadOnlyAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "attach_container_policy_s3_to_role" {
+  role       = aws_iam_role.ecs_container_role.name
+  policy_arn = data.aws_iam_policy.ecs_container_policy_s3.arn
+}
+
+resource "aws_iam_instance_profile" "ecs_container_iam_profile" {
+  name = "ecs_container_iam_profile-test-1"
+  role = aws_iam_role.ecs_container_role.name
 }
 
 data "aws_ami" "ecs_optimized_ami" {
@@ -57,9 +97,14 @@ data "aws_ami" "ecs_optimized_ami" {
   }
 }
 
+# Creates a few ECS-optimized EC2 instances to be used by cluster as containers
 resource "aws_instance" "ecs_optimized_ec2" {
-  for_each      = toset(data.aws_subnets.default_subnets.ids)
-  ami           = data.aws_ami.ecs_optimized_ami.id
-  instance_type = "t2.micro"
-  subnet_id     = each.value
+  for_each             = toset(data.aws_subnets.default_subnets.ids)
+  ami                  = data.aws_ami.ecs_optimized_ami.id
+  instance_type        = "t2.micro"
+  subnet_id            = each.value
+  iam_instance_profile = aws_iam_instance_profile.ecs_container_iam_profile.name
+  tags = {
+    "Name" = "ecs-test-${each.value}"
+  }
 }
