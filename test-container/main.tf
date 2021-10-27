@@ -5,8 +5,12 @@ resource "aws_ecr_repository" "api-service-registry" {
   }
 }
 
-resource "aws_ecs_cluster" "app-service-cluster" {
-  name = "app-service-cluster-test-1"
+# resource "aws_ecs_cluster" "app-service-cluster" {
+#   name = "app-service-cluster-test-1"
+# }
+
+data "aws_ecs_cluster" "default-cluster" {
+  cluster_name = "default"
 }
 
 # Creates Task Definition with placeholder image
@@ -30,7 +34,7 @@ resource "aws_ecs_task_definition" "api-service" {
 
 resource "aws_ecs_service" "worker" {
   name            = "worker-test-1"
-  cluster         = aws_ecs_cluster.app-service-cluster.id
+  cluster         = data.aws_ecs_cluster.default-cluster.id
   task_definition = aws_ecs_task_definition.api-service.arn
   desired_count   = 2
 }
